@@ -1,10 +1,28 @@
-defaults:
-    - override hydra/launcher: submitit_local
+# defaults:
+#     - override hydra/launcher: submitit_local
 
 # environment
-task: dog-run
 obs: state
-num_envs: 1
+num_envs: 4
+task: raisim
+
+raisim_config:
+  render: true
+  num_threads: 30
+  simulation_dt: 0.0025
+  control_dt: 0.01
+  action_std: 0.3
+  max_time: 4.0
+  reward:
+    forwardVel:
+      coeff: 0.3
+    torque:
+      coeff: -4e-5
+  seed: 42
+  visualize: true
+  reset_when_done: false
+  # This should be absolute path
+raisim_resource_path: /home/gmmyung/Develop/raisimLib/rsc
 
 # evaluation
 checkpoint: ???
@@ -14,7 +32,7 @@ eval_freq: 50000
 # training
 steps: 10_000_000
 batch_size: 256
-steps_per_update: 1
+steps_per_update: 4
 reward_coef: 0.1
 value_coef: 0.1
 consistency_coef: 20
@@ -64,14 +82,14 @@ dropout: 0.01
 simnorm_dim: 8
 
 # logging
-wandb_project: ???
-wandb_entity: ???
+wandb_project: tdmpc2 
+wandb_entity: gyungmin
 wandb_silent: false
-disable_wandb: true
+disable_wandb: false
 save_csv: true
 
 # misc
-save_video: true
+save_video: false 
 save_agent: true
 seed: 1
 
