@@ -55,6 +55,7 @@ class TensorWrapper(gym.Wrapper):
         else:
             info = defaultdict(lambda: torch.zeros(len(done), dtype=torch.float32))
 
+
         done = torch.full(done.shape, done.any())
         return (
             self._obs_to_tensor(obs),
