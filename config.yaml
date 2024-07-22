@@ -12,13 +12,16 @@ raisim_config:
   simulation_dt: 0.0025
   control_dt: 0.02
   action_std: 0.3
-  max_time: 4.0
+  max_time: 8.0
   reward:
     forwardVel:
       coeff: 0.3
     torque:
       coeff: -4e-5
   seed: 42
+  p_gain: 50 
+  d_gain: 0.2
+  port: 8081
   visualize: true
   reset_when_done: false
 # This should be absolute path
