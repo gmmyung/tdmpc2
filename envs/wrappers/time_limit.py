@@ -2,9 +2,10 @@
 Wrapper for limiting the time steps of an environment.
 Source: https://github.com/openai/gym/blob/3498617bf031538a808b75b932f4ed2c11896a3e/gym/wrappers/time_limit.py
 """
+
 from typing import Optional
 
-import gym
+import gymnasium as gym
 
 
 class TimeLimit(gym.Wrapper):
@@ -49,7 +50,7 @@ class TimeLimit(gym.Wrapper):
             when truncated (the number of steps elapsed >= max episode steps) or
             "TimeLimit.truncated"=False if the environment terminated
         """
-        observation, reward, done, info = self.env.step(action)
+        observation, reward, done, _, info = self.env.step(action)
         self._elapsed_steps += 1
         if self._elapsed_steps >= self._max_episode_steps:
             # TimeLimit.truncated key may have been already set by the environment
