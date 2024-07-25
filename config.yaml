@@ -14,7 +14,7 @@ raisim_config:
   num_threads: 30
   simulation_dt: 0.0025
   control_dt: 0.05
-  max_time: 4.0
+  max_time: 6.0
   action_std: 0.3
   reward:
     forwardVel:
@@ -23,7 +23,7 @@ raisim_config:
       coeff: -4e-5
   p_gain: 80.0
   d_gain: 2
-  port: 8082
+  server_port: 8081
   urdf_path: /anymal/urdf/anymal_depth_sensor.urdf
   seed: 42
   visualize: true
@@ -44,7 +44,7 @@ tau: 0.01
 discount_denom: 5
 discount_min: 0.95
 discount_max: 0.995
-buffer_size: 400_000
+buffer_size: 200_000
 exp_name: default
 data_dir: ???
 

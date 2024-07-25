@@ -96,8 +96,9 @@ class VideoRecorder:
 
     def record(self, env):
         if self.enabled:
-            mono = env.render().astype(np.uint8) * 10
-            self.frames.append(self.colormap[mono].reshape(64, 64, 3))
+            mono = env.render().astype(np.uint8) * 5
+            # self.frames.append(self.colormap[mono].reshape(64, 64, 3))
+            self.frames.append(mono)
 
     def save(self, step, key="videos/eval_video"):
         if self.enabled and len(self.frames) > 0:

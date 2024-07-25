@@ -17,7 +17,7 @@ class PixelWrapper(gym.Wrapper):
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
-            shape=(num_frames, render_size, render_size),
+            shape=(num_frames * 3, render_size, render_size),
             dtype=np.uint8,
         )
         self._frames = deque([], maxlen=num_frames)

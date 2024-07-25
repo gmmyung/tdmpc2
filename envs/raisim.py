@@ -33,6 +33,7 @@ class RaisimEnv(gym.Env):
     def reset(self, **kwargs):
         self.env.reset()
         obs = self.env.observe().astype(np.float32)[0]
+        self.env.curriculum_callback()
         return obs, {}
 
     def step(self, action):
@@ -44,12 +45,20 @@ class RaisimEnv(gym.Env):
 
     def render(self, mode="depth"):
         if mode == 'depth':
-            return np.nan_to_num(self.env.depth_image(), nan=100).reshape((64, 64, 1)).transpose((1, 0, 2))
+            im = np.nan_to_num(self.env.depth_image()[0], nan=255).clip(0, 255).transpose((1, 0))
+            im *= 30
+            # Calculate x/y direction gradient
+            grad_x = np.gradient(im, axis=1)
+            grad_y = np.gradient(im, axis=0)
+            return  np.stack((im, grad_x, grad_y), axis=2)
+
 
     def close(self):
         if self.cfg.raisim_config.visualization:
             self.env.turn_off_visualization()
         self.env.close()
+
+
 
 
 def make_env(cfg):
