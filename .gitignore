@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+logs/raisim/1/default/wandb
+logs/raisim/1/default
+outputs/2024-07-29
