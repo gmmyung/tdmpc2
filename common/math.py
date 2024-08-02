@@ -21,7 +21,7 @@ def _gaussian_residual(eps, log_std):
 
 @torch.jit.script
 def _gaussian_logprob(residual):
-    return residual - 0.5 * torch.log(2 * torch.pi)
+    return residual - 0.5 * torch.log(torch.tensor(2 * torch.pi))
 
 
 def gaussian_logprob(eps, log_std, size=None):

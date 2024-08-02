@@ -38,19 +38,18 @@ class RaisimEnv(gym.Env):
 
     def step(self, action):
         rewards, dones = self.env.step(np.expand_dims(action, 0))
+        reward_info = self.env.get_reward_info()[0]
+        training_info = self.env.get_training_info()[0]
         reward = rewards[0]
         done = dones[0]
         obs = self.env.observe().astype(np.float32)[0]
-        return obs, reward, False, False, {"success": not done}
+        return obs, reward, False, False, {"success": not done, "reward": reward_info, "training_info":training_info }
 
     def render(self, mode="depth"):
         if mode == 'depth':
-            im = np.nan_to_num(self.env.depth_image()[0], nan=255).clip(0, 255).transpose((1, 0))
-            im *= 30
-            # Calculate x/y direction gradient
-            grad_x = np.gradient(im, axis=1)
-            grad_y = np.gradient(im, axis=0)
-            return  np.stack((im, grad_x, grad_y), axis=2)
+            im = np.nan_to_num(self.env.depth_image()[0], nan=20).clip(0, 20)
+            assert isinstance(im, np.ndarray)
+            return np.expand_dims(im, -1)
 
 
     def close(self):

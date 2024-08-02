@@ -135,6 +135,7 @@ class TDMPC2:
             z, self.model.pi(z, task)[1], task, return_type="avg"
         )
 
+    # @torch.compile
     @torch.no_grad()
     def plan(self, z, t0=False, eval_mode=False, task=None):
         """
@@ -259,6 +260,8 @@ class TDMPC2:
 
         return pi_loss.item()
 
+
+    @torch.compile
     @torch.no_grad()
     def _td_target(self, next_z, reward, task):
         """
@@ -280,6 +283,7 @@ class TDMPC2:
             next_z, pi, task, return_type="min", target=True
         )
 
+    @torch.compile
     def update(self, buffer):
         """
         Main update function. Corresponds to one iteration of model learning.

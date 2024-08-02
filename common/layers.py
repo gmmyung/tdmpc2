@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as models
 from functorch import combine_state_for_ensemble
 
 
@@ -141,6 +142,8 @@ def conv(in_shape, num_channels, act=None):
     4 layers of convolution with ReLU activations, followed by a linear layer.
     """
     assert in_shape[-1] == 64  # assumes rgb observations to be 64x64
+    # model = models.resnet18(pretrained=True)
+    # model.fc = nn.Linear(model.fc.in_features, out_dim)
     layers = [
         ShiftAug(),
         PixelPreprocess(),
@@ -152,6 +155,7 @@ def conv(in_shape, num_channels, act=None):
         nn.ReLU(inplace=True),
         nn.Conv2d(num_channels, num_channels, 3, stride=1),
         nn.Flatten(),
+        # model,
     ]
     if act:
         layers.append(act)
@@ -160,9 +164,11 @@ def conv(in_shape, num_channels, act=None):
 class MultiModal(nn.Module):
     def __init__(self, in_dim, mlp_dims, out_dim, in_shape, num_channels, act=None, dropout=0.0):
         super().__init__()
-        self.mlp = mlp(in_dim, mlp_dims, out_dim, None, dropout)
-        self.conv = conv(in_shape, num_channels, None)
-        self.adaptor = mlp(out_dim * 2, mlp_dims, out_dim, act, dropout)
+        fuse_out_dim = out_dim * 2 // 3
+        self.mlp = mlp(in_dim, mlp_dims, out_dim , None, dropout)
+        self.conv = conv(in_shape, num_channels , None)
+        conv_out_features = self.conv(torch.zeros(1, 3, 64, 64)).shape[-1]
+        self.adaptor = mlp(out_dim + conv_out_features, mlp_dims, out_dim, act, dropout)
 
     def forward(self, state, rgb):
         state = self.mlp(state)

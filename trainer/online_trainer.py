@@ -26,9 +26,9 @@ class OnlineTrainer(Trainer):
 
     def eval(self):
         """Evaluate a TD-MPC2 agent."""
-        ep_rewards, ep_successes = [], []
+        ep_rewards, ep_successes, ep_reward_infos, ep_training_infos = [], [], {}, {}
         for i in range(self.cfg.eval_episodes):
-            obs, done, ep_reward, t = self.env.reset(), False, 0, 0
+            obs, done, ep_reward, ep_reward_info, t = self.env.reset(), False, 0, {}, 0
             if self.cfg.save_video:
                 self.logger.video.init(self.env, enabled=(i == 0))
             start_time = time()
@@ -39,16 +39,27 @@ class OnlineTrainer(Trainer):
                 start_time = now
                 obs, reward, done, info = self.env.step(action)
                 ep_reward += reward
+                ep_reward_info = {k: ep_reward_info.get(k, 0) + info["reward"][k] for k in info["reward"]}
                 t += 1
                 if self.cfg.save_video:
                     self.logger.video.record(self.env)
             ep_rewards.append(ep_reward)
             ep_successes.append(info["success"])
+            for k, v in ep_reward_info.items():
+                if k not in ep_reward_infos:
+                    ep_reward_infos[k] = []
+                ep_reward_infos[k].append(v)
+            for k, v in info["training_info"].items():
+                if k not in ep_training_infos:
+                    ep_training_infos[k] = []
+                ep_training_infos[k].append(v)
             if self.cfg.save_video:
                 self.logger.video.save(self._step)
         return dict(
             episode_reward=np.nanmean(ep_rewards),
             episode_success=np.nanmean(ep_successes),
+            episode_reward_info={k: np.nanmean(v) for k, v in ep_reward_infos.items()},
+            episode_training_info={k: np.nanmean(v) for k, v in ep_training_infos.items()},
         )
 
     def to_td(self, obs, action=None, reward=None):

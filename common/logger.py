@@ -78,16 +78,13 @@ def cfg_to_group(cfg, return_list=False):
 class VideoRecorder:
     """Utility class for logging evaluation videos."""
 
-    def __init__(self, cfg, wandb, fps=15):
+    def __init__(self, cfg, wandb ):
         self.cfg = cfg
         self._save_dir = make_dir(cfg.work_dir / "eval_video")
         self._wandb = wandb
-        self.fps = fps
+        self.fps = 1 / cfg.raisim_config.control_dt
         self.frames = []
         self.enabled = False
-        self.colormap = np.zeros((256, 3), dtype=np.uint8)
-        for i in range(256):
-            self.colormap[i] = np.array([i, 0, 255 - i])
 
     def init(self, env, enabled=True):
         self.frames = []
@@ -96,9 +93,8 @@ class VideoRecorder:
 
     def record(self, env):
         if self.enabled:
-            mono = env.render().astype(np.uint8) * 5
-            # self.frames.append(self.colormap[mono].reshape(64, 64, 3))
-            self.frames.append(mono)
+            mono = (env.render() * 100).astype(np.uint8)
+            self.frames.append(np.repeat(mono, 3, axis=2))
 
     def save(self, step, key="videos/eval_video"):
         if self.enabled and len(self.frames) > 0:

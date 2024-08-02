@@ -19,7 +19,7 @@ class MultiModalWrapper(gym.Wrapper):
                 "rgb": gym.spaces.Box(
                     low=0,
                     high=255,
-                    shape=(num_frames * 3, render_size, render_size),
+                    shape=(num_frames, render_size, render_size),
                     dtype=np.float32,
                 ),
                 "state": self.env.observation_space,
