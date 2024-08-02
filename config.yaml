@@ -29,7 +29,7 @@ raisim_config:
     command_tracking_reward_coeff: 1.5
     torque_reward_coeff: -2.0e-4
     body_contact_reward_coeff: -1.0
-  p_gain: 200.0
+  p_gain: 100.0
   d_gain: 2
   server_port: 8081
   urdf_path: /raibo2_with_head/urdf/raibo2.urdf
