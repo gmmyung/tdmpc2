@@ -29,9 +29,9 @@ class MultiModalWrapper(gym.Wrapper):
         self._render_size = render_size
 
     def _get_images(self):
-        frame = self.env.render().transpose(2, 0, 1)
+        frame = self.env.render()
         self._frames.append(frame)
-        return torch.from_numpy(np.concatenate(self._frames))
+        return torch.from_numpy(np.concatenate(self._frames, axis=-3))
 
     def reset(self):
         obs = self.env.reset()

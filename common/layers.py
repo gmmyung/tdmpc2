@@ -39,7 +39,9 @@ class ShiftAug(nn.Module):
 
     def forward(self, x):
         x = x.float()
-        n, _, h, w = x.size()
+        n = x.size()[0:-3]
+        h = x.size()[-2]
+        w = x.size()[-1]
         assert h == w
         padding = tuple([self.pad] * 4)
         x = F.pad(x, padding, "replicate")
@@ -49,9 +51,9 @@ class ShiftAug(nn.Module):
         )[:h]
         arange = arange.unsqueeze(0).repeat(h, 1).unsqueeze(2)
         base_grid = torch.cat([arange, arange.transpose(1, 0)], dim=2)
-        base_grid = base_grid.unsqueeze(0).repeat(n, 1, 1, 1)
+        base_grid = base_grid.unsqueeze(0).repeat(n + (1, 1, 1))
         shift = torch.randint(
-            0, 2 * self.pad + 1, size=(n, 1, 1, 2), device=x.device, dtype=x.dtype
+            0, 2 * self.pad + 1, size=n + (1, 1, 2), device=x.device, dtype=x.dtype
         )
         shift *= 2.0 / (h + 2 * self.pad)
         grid = base_grid + shift
@@ -67,7 +69,8 @@ class PixelPreprocess(nn.Module):
         super().__init__()
 
     def forward(self, x):
-        return x.div_(255.0).sub_(0.5)
+        # return x.div_(255.0).sub_(0.5)
+        return x.div_(20.0).sub_(0.5)
 
 
 class SimNorm(nn.Module):
@@ -142,8 +145,6 @@ def conv(in_shape, num_channels, act=None):
     4 layers of convolution with ReLU activations, followed by a linear layer.
     """
     assert in_shape[-1] == 64  # assumes rgb observations to be 64x64
-    # model = models.resnet18(pretrained=True)
-    # model.fc = nn.Linear(model.fc.in_features, out_dim)
     layers = [
         ShiftAug(),
         PixelPreprocess(),
@@ -155,20 +156,22 @@ def conv(in_shape, num_channels, act=None):
         nn.ReLU(inplace=True),
         nn.Conv2d(num_channels, num_channels, 3, stride=1),
         nn.Flatten(),
-        # model,
     ]
     if act:
         layers.append(act)
     return nn.Sequential(*layers)
 
+
 class MultiModal(nn.Module):
-    def __init__(self, in_dim, mlp_dims, out_dim, in_shape, num_channels, act=None, dropout=0.0):
+    def __init__(
+        self, in_dim, mlp_dims, out_dim, in_shape, num_channels, act=None, dropout=0.0
+    ):
         super().__init__()
-        fuse_out_dim = out_dim * 2 // 3
-        self.mlp = mlp(in_dim, mlp_dims, out_dim , None, dropout)
-        self.conv = conv(in_shape, num_channels , None)
+        self.mlp = mlp(in_dim, mlp_dims, out_dim, None, dropout)
+        self.conv = conv(in_shape, num_channels, None)
         conv_out_features = self.conv(torch.zeros(1, 3, 64, 64)).shape[-1]
         self.adaptor = mlp(out_dim + conv_out_features, mlp_dims, out_dim, act, dropout)
+        self.mlp = mlp(in_dim, mlp_dims, out_dim, act, dropout)
 
     def forward(self, state, rgb):
         state = self.mlp(state)
@@ -181,11 +184,11 @@ def enc(cfg, out={}):
     Returns a dictionary of encoders for each observation in the dict.
     """
     if "state" in cfg.obs_shape.keys() and "rgb" in cfg.obs_shape.keys():
-        out['multimodal'] = MultiModal(
-            cfg.obs_shape['state'][0] + cfg.task_dim,
+        out["multimodal"] = MultiModal(
+            cfg.obs_shape["state"][0] + cfg.task_dim,
             max(cfg.num_enc_layers - 1, 1) * [cfg.enc_dim],
             cfg.latent_dim,
-            cfg.obs_shape['rgb'],
+            cfg.obs_shape["rgb"],
             cfg.num_channels,
             act=SimNorm(cfg),
         )

@@ -124,7 +124,9 @@ class WorldModel(nn.Module):
             if obs["rgb"].ndim == 5:
                 out = []
                 for i in range(obs["rgb"].shape[0]):
-                    out.append(self._encoder[self.cfg.obs](obs["state"][i], obs["rgb"][i]))
+                    out.append(
+                        self._encoder[self.cfg.obs](obs["state"][i], obs["rgb"][i])
+                    )
                 return torch.stack(out)
             else:
                 return self._encoder[self.cfg.obs](obs["state"], obs["rgb"])

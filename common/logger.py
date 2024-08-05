@@ -78,7 +78,7 @@ def cfg_to_group(cfg, return_list=False):
 class VideoRecorder:
     """Utility class for logging evaluation videos."""
 
-    def __init__(self, cfg, wandb ):
+    def __init__(self, cfg, wandb):
         self.cfg = cfg
         self._save_dir = make_dir(cfg.work_dir / "eval_video")
         self._wandb = wandb
@@ -93,8 +93,8 @@ class VideoRecorder:
 
     def record(self, env):
         if self.enabled:
-            mono = (env.render() * 100).astype(np.uint8)
-            self.frames.append(np.repeat(mono, 3, axis=2))
+            mono = (env.render() * 100).astype(np.uint8)[0]
+            self.frames.append(np.repeat(mono, 3, axis=-3))
 
     def save(self, step, key="videos/eval_video"):
         if self.enabled and len(self.frames) > 0:
