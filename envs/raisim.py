@@ -35,10 +35,7 @@ class RaisimEnv(gym.Env):
         return obs, {}
 
     def step(self, action):
-        # rewards, dones = self.env.step(action)
-        rewards, dones = self.env.step(
-                action
-        )
+        rewards, dones = self.env.step(action)
         reward_infos = self.env.get_reward_info()
         training_infos = self.env.get_training_info()
         obs = np.stack(self.env.observe()).astype(np.float32)
@@ -60,9 +57,7 @@ class RaisimEnv(gym.Env):
     def render(self, mode="depth"):
         if mode == "depth":
             im = (
-                np.nan_to_num(np.stack(self.env.depth_image()), nan=20)
-                .clip(0, 20)
-                .transpose(0, 2, 1)
+                np.nan_to_num(np.stack(self.env.depth_image()), nan=20).clip(0, 20)
             )
             assert isinstance(im, np.ndarray)
             return np.expand_dims(im, 1)
