@@ -7,6 +7,7 @@ from raisimGymTorch.env.RaisimGymVecEnv import RaisimGymVecEnv as VecEnv
 from raisimGymTorch.env.bin.rsg_anymal import RaisimGymEnv
 import torch
 
+
 # TODO: Remove [0] indexing by directly using RaisimGymEnv
 class RaisimEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
@@ -50,15 +51,15 @@ class RaisimEnv(gym.Env):
                 "training_info": training_infos,
             },
         )
-    
+
     def rand_act(self):
-        return np.random.uniform(-1, 1, (self.env.num_envs, self.env.num_acts)).astype(np.float32)
+        return np.random.uniform(-1, 1, (self.env.num_envs, self.env.num_acts)).astype(
+            np.float32
+        )
 
     def render(self, mode="depth"):
         if mode == "depth":
-            im = (
-                np.nan_to_num(np.stack(self.env.depth_image()), nan=20).clip(0, 20)
-            )
+            im = np.nan_to_num(np.stack(self.env.depth_image()), nan=20).clip(0, 20)
             assert isinstance(im, np.ndarray)
             return np.expand_dims(im, 1)
 

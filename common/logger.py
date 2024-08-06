@@ -101,11 +101,7 @@ class VideoRecorder:
             frames = np.stack(self.frames)
             print(frames.shape)
             return self._wandb.log(
-                {
-                    key: self._wandb.Video(
-                        frames, fps=self.fps, format="mp4"
-                    )
-                },
+                {key: self._wandb.Video(frames, fps=self.fps, format="mp4")},
                 step=step,
             )
 
