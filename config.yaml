@@ -25,16 +25,16 @@ raisim_config:
     iteration_per_terrain_update: 50
     initial_factor: 1.0
     decay_factor: 0.0
-    terrain_initial_factor: 0.05
-    terrain_decay_factor: 0.995
+    terrain_initial_factor: 0.1
+    terrain_decay_factor: 0.99
   reward:
     command_tracking_reward_coeff: 1.5
     torque_reward_coeff: -2.0e-4
-    pitch_reward_coeff: 0
-    body_contact_reward_coeff: 0
+    pitch_reward_coeff: -5
+    body_contact_reward_coeff: -5
   p_gain: 100.0
   d_gain: 2
-  server_port: 8081
+  server_port: 8080
   urdf_path: /raibo2_with_head/urdf/raibo2.urdf
   seed: 42
   visualize: true
@@ -42,7 +42,7 @@ raisim_config:
 raisim_resource_path: /home/gmmyung/Develop/raisimLib/rsc
 
 # training
-steps: 10_000_000
+steps: 100_000
 batch_size: 256
 reward_coef: 0.1
 value_coef: 0.1
