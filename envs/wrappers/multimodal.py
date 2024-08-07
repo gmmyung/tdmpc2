@@ -10,7 +10,7 @@ class MultiModalWrapper(gym.Wrapper):
     Wrapper for multi-modal environments.
     """
 
-    def __init__(self, cfg, env, num_frames=3, render_size=64):
+    def __init__(self, cfg, env, num_frames=8, render_size=64):
         super().__init__(env)
         self.cfg = cfg
         self.env = env
@@ -22,10 +22,11 @@ class MultiModalWrapper(gym.Wrapper):
                     shape=(num_frames, render_size, render_size),
                     dtype=np.float32,
                 ),
-                "state": self.env.observation_space,
+                "state": gym.spaces.Box(low=-np.inf, high=np.inf, shape=(num_frames * env.observation_space.shape[0],))
             }
         )
         self._frames = deque([], maxlen=num_frames)
+        self._state_frames = deque([], maxlen=num_frames)
         self._render_size = render_size
 
     def _get_images(self):
@@ -37,12 +38,14 @@ class MultiModalWrapper(gym.Wrapper):
         obs = self.env.reset()
         for _ in range(self._frames.maxlen):
             self._get_images()
-        return {"rgb": self._get_images(), "state": obs}
+            self._state_frames.append(obs)
+        return {"rgb": self._get_images(), "state": torch.from_numpy(np.concatenate(self._state_frames, axis=-1))}
 
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
+        self._state_frames.append(obs)
         return (
-            {"rgb": self._get_images(), "state": obs},
+            {"rgb": self._get_images(), "state": torch.from_numpy(np.concatenate(self._state_frames, axis=-1))},
             reward,
             done,
             info,

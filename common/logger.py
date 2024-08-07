@@ -93,7 +93,7 @@ class VideoRecorder:
 
     def record(self, env):
         if self.enabled:
-            mono = (env.render() * 100).astype(np.uint8)[0]
+            mono = (env.render() * 100).astype(np.uint8)[-1]
             self.frames.append(np.repeat(mono, 3, axis=-3))
 
     def save(self, step, key="videos/eval_video"):

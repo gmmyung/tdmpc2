@@ -169,7 +169,7 @@ class MultiModal(nn.Module):
         super().__init__()
         self.mlp = mlp(in_dim, mlp_dims, out_dim, None, dropout)
         self.conv = conv(in_shape, num_channels, None)
-        conv_out_features = self.conv(torch.zeros(1, 3, 64, 64)).shape[-1]
+        conv_out_features = self.conv(torch.zeros(1, 8, 64, 64)).shape[-1]
         self.adaptor = mlp(out_dim + conv_out_features, mlp_dims, out_dim, act, dropout)
         self.mlp = mlp(in_dim, mlp_dims, out_dim, act, dropout)
 
