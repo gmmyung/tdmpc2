@@ -60,8 +60,7 @@ class RaisimEnv(gym.Env):
     def render(self, mode="depth"):
         if mode == "depth":
             im = np.nan_to_num(np.stack(self.env.depth_image()), nan=20).clip(0, 20)
-            assert isinstance(im, np.ndarray)
-            return np.expand_dims(im, 1)
+            return np.expand_dims(im, -3)
 
     def close(self):
         if self.cfg.raisim_config.visualization:

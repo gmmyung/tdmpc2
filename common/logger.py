@@ -3,10 +3,12 @@ import datetime
 import re
 import numpy as np
 import pandas as pd
+import torch
 from termcolor import colored
 from omegaconf import OmegaConf
 
 from common import TASK_SET
+from raisimGymTorch.env.envs.rsg_anymal.tdmpc2.common.layers import PixelPreprocess
 
 
 CONSOLE_FORMAT = [
@@ -85,6 +87,7 @@ class VideoRecorder:
         self.fps = 1 / cfg.raisim_config.control_dt
         self.frames = []
         self.enabled = False
+        self.preprocess = PixelPreprocess()
 
     def init(self, env, enabled=True):
         self.frames = []
@@ -93,15 +96,17 @@ class VideoRecorder:
 
     def record(self, env):
         if self.enabled:
-            mono = (env.render() * 100).astype(np.uint8)[-1]
-            self.frames.append(np.repeat(mono, 3, axis=-3))
+            mono = (env.render())[0]
+            self.frames.append(mono)
 
     def save(self, step, key="videos/eval_video"):
         if self.enabled and len(self.frames) > 0:
             frames = np.stack(self.frames)
-            print(frames.shape)
+            im = torch.from_numpy(frames)
+            im = (self.preprocess(im) + 0.5) * 255
+            im = im.cpu().numpy().astype(np.uint8)
             return self._wandb.log(
-                {key: self._wandb.Video(frames, fps=self.fps, format="mp4")},
+                {key: self._wandb.Video(im, fps=self.fps, format="mp4")},
                 step=step,
             )
 

@@ -40,6 +40,7 @@ class ShiftAug(nn.Module):
     def forward(self, x):
         x = x.float()
         n = x.size()[0:-3]
+        c = x.size()[-3]
         h = x.size()[-2]
         w = x.size()[-1]
         assert h == w
@@ -59,7 +60,6 @@ class ShiftAug(nn.Module):
         grid = base_grid + shift
         return F.grid_sample(x, grid, padding_mode="zeros", align_corners=False)
 
-
 class PixelPreprocess(nn.Module):
     """
     Normalizes pixel observations to [-0.5, 0.5].
@@ -69,8 +69,13 @@ class PixelPreprocess(nn.Module):
         super().__init__()
 
     def forward(self, x):
-        # return x.div_(255.0).sub_(0.5)
-        return x.div_(20.0).sub_(0.5)
+        x_grad = torch.gradient(x, axis=-1)[0]
+        y_grad = torch.gradient(x, axis=-2)[0]
+        x_grad = torch.sigmoid(x_grad * 60) / 2
+        y_grad = torch.sigmoid(y_grad * 60) / 2
+        x = torch.sigmoid(x / 2) - 0.5
+        x = torch.cat([x, x_grad, y_grad], dim=-3)
+        return x
 
 
 class SimNorm(nn.Module):
@@ -148,7 +153,7 @@ def conv(in_shape, num_channels, act=None):
     layers = [
         ShiftAug(),
         PixelPreprocess(),
-        nn.Conv2d(in_shape[0], num_channels, 7, stride=2),
+        nn.Conv2d(in_shape[0] * 3, num_channels, 7, stride=2),
         nn.ReLU(inplace=True),
         nn.Conv2d(num_channels, num_channels, 5, stride=2),
         nn.ReLU(inplace=True),

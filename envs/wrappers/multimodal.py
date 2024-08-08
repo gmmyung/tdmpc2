@@ -18,7 +18,7 @@ class MultiModalWrapper(gym.Wrapper):
             {
                 "rgb": gym.spaces.Box(
                     low=0,
-                    high=255,
+                    high=20,
                     shape=(num_frames, render_size, render_size),
                     dtype=np.float32,
                 ),

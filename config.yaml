@@ -7,7 +7,7 @@ checkpoint: ???
 eval_episodes: 10
 eval_freq: 20000
 num_envs: 4
-steps_per_update: 1
+steps_per_update: 4
 
 raisim_config:
   render: true
