@@ -63,6 +63,8 @@ class SimpleApp(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_W:
             self.command[0] =0.8
+        elif event.key() == Qt.Key_S:
+            self.command[0] =0.0
         elif event.key() == Qt.Key_A:
             self.command[1] = -0.2
         elif event.key() == Qt.Key_D:
@@ -78,19 +80,19 @@ class SimpleApp(QWidget):
         print(self.command)
 
     def keyReleaseEvent(self, event):
-        # if event.key() == Qt.Key_W:
-        #     self.command[0] = 0.0
-        # elif event.key() == Qt.Key_A:
-        #     self.command[1] = 0.0
-        # elif event.key() == Qt.Key_D:
-        #     self.command[1] = 0.0
-        # elif event.key() == Qt.Key_Q:
-        #     self.command[2] = 0.0
-        # elif event.key() == Qt.Key_E:
-        #     self.command[2] = 0.0
-        # else:
-        #     super().keyReleaseEvent(event)
-        #     return
+        if event.key() == Qt.Key_W:
+            self.command[0] = 0.0
+        elif event.key() == Qt.Key_A:
+            self.command[1] = 0.0
+        elif event.key() == Qt.Key_D:
+            self.command[1] = 0.0
+        elif event.key() == Qt.Key_Q:
+            self.command[2] = 0.0
+        elif event.key() == Qt.Key_E:
+            self.command[2] = 0.0
+        else:
+            super().keyReleaseEvent(event)
+            return
         self.setCommand(self.command)
         print(self.command)
 
@@ -121,7 +123,7 @@ class Controller:
             self.obs = self.env.reset()
         start = time.time()
         # self.obs['state'][0, -3:] = torch.tensor(self.command)
-        # self.obs[0, -3:] = torch.tensor(self.command)
+        self.obs[0, -3:] = torch.tensor(self.command)
         action = self.agent.act(self.obs, t0 = self.t == 0, eval_mode=True)
         self.obs, self.reward, _, info = self.env.step(action)
         elapsed = time.time() - start
@@ -145,7 +147,6 @@ def run(cfg: dict):
     cfg["num_envs"] = 1
     cfg["raisim_config"]["num_envs"] = 1
     cfg["raisim_config"]["num_threads"] = 1
-    print(cfg)
     cfg = parse_cfg(cfg)
     env = make_env(cfg)
     agent = TDMPC2(cfg)
@@ -153,18 +154,8 @@ def run(cfg: dict):
         cfg.checkpoint
     ), f"Checkpoint {cfg.checkpoint} not found! Must be a valid filepath."
     agent.load(cfg.checkpoint)
-    # controller = Controller(agent, env)
-    # controller.run()
-    for i in range(100):
-        obs = env.reset()
-        t = 0
-        for j in range(100):
-            start = time.time()
-            action = agent.act(obs, t0=t == 0, eval_mode=True)
-            obs, _, _, _ = env.step(action)
-            time.sleep(max(0, 0.05 - (time.time() - start)))
-            t += 1
-
+    controller = Controller(agent, env)
+    controller.run()
 
 if __name__ == "__main__":
     run()
