@@ -122,8 +122,8 @@ class Controller:
         if self.obs is None:
             self.obs = self.env.reset()
         start = time.time()
-        # self.obs['state'][0, -3:] = torch.tensor(self.command)
-        self.obs[0, -3:] = torch.tensor(self.command)
+        self.obs['state'][0, -3:] = torch.tensor(self.command)
+        # self.obs[0, -3:] = torch.tensor(self.command)
         action = self.agent.act(self.obs, t0 = self.t == 0, eval_mode=True)
         self.obs, self.reward, _, info = self.env.step(action)
         elapsed = time.time() - start
