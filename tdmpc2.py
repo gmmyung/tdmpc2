@@ -102,16 +102,19 @@ class TDMPC2:
         Returns:
             torch.Tensor: Action to take in the environment.
         """
-        if self.cfg.obs == "multimodal":
-            obs = {
-                "state": obs["state"].to(self.device, non_blocking=True),
-                "rgb": obs["rgb"].to(self.device, non_blocking=True),
-            }
-        else:
-            obs = obs.to(self.device, non_blocking=True)
         if task is not None:
             task = torch.tensor([task], device=self.device)
-        z = self.model.encode(obs, task)
+        if self.cfg.obs == "multimodal":
+            obs = {
+                    k: obs[k].to(self.device, non_blocking=True) for k in obs.keys()
+            }
+            if t0:
+                z, self.encoder_hidden = self.model.encode(obs, task)
+            else:
+                z, self.encoder_hidden = self.model.encode(obs, task, self.encoder_hidden)
+        else:
+            obs = obs.to(self.device, non_blocking=True)
+            z = self.model.encode(obs, task)
         if self.cfg.mpc:
             action = self.plan(z, t0=t0, eval_mode=eval_mode, task=task)
         else:
@@ -319,14 +322,15 @@ class TDMPC2:
         """
         obs, action, reward, task = buffer.sample()
 
-        # Compute targets
-        with torch.no_grad():
-            next_z = self.model.encode(obs[1:], task)
-            td_targets = self._td_target(next_z, reward, task)
-
         # Prepare for update
         self.optim.zero_grad(set_to_none=True)
         self.model.train()
+
+        # Compute targets
+        z, hidden = self.model.encode(obs[0], task)
+        with torch.no_grad():
+            next_z, _ = self.model.encode(obs[1:], task, hidden, sequential=True) 
+            td_targets = self._td_target(next_z, reward, task)
 
         # Latent rollout
         zs = torch.empty(
@@ -335,7 +339,6 @@ class TDMPC2:
             self.cfg.latent_dim,
             device=self.device,
         )
-        z = self.model.encode(obs[0], task)
         zs[0] = z
         consistency_loss = 0
         for t in range(self.cfg.horizon):

@@ -111,26 +111,31 @@ class WorldModel(nn.Module):
             emb = emb.repeat(x.shape[0], 1)
         return torch.cat([x, emb], dim=-1)
 
-    def encode(self, obs, task):
+    def encode(self, obs, task, hidden=None, sequential=False):
         """
         Encodes an observation into its latent representation.
         This implementation assumes a single state-based observation.
         """
         if self.cfg.multitask:
             obs = self.task_emb(obs, task)
-        if self.cfg.obs == "rgb" and obs.ndim == 5:
-            return torch.stack([self._encoder[self.cfg.obs](o) for o in obs])
+        # if self.cfg.obs == "rgb" and obs.ndim == 5:
+        #     return torch.stack([self._encoder[self.cfg.obs](o) for o in obs])
+        # if self.cfg.obs == "multimodal":
+        #     if obs["rgb"].ndim == 5:
+        #         out = []
+        #         out_hidden = []
+        #         for i in range(obs["rgb"].shape[0]):
+        #             env_out, env_hidden = self._encoder[self.cfg.obs](obs["state"][i], obs["rgb"][i], hidden)
+        #             out.append(env_out)
+        #             out_hidden.append(env_hidden)
+        #         return torch.stack(out), torch.stack(out_hidden)
+        #     else:
+        #         return self._encoder[self.cfg.obs](obs["state"], obs["rgb"], hidden)
         if self.cfg.obs == "multimodal":
-            if obs["rgb"].ndim == 5:
-                out = []
-                for i in range(obs["rgb"].shape[0]):
-                    out.append(
-                        self._encoder[self.cfg.obs](obs["state"][i], obs["rgb"][i])
-                    )
-                return torch.stack(out)
-            else:
-                return self._encoder[self.cfg.obs](obs["state"], obs["rgb"])
-        return self._encoder[self.cfg.obs](obs)
+            rgbs = [obs[k] for k in obs.keys() if k.startswith("rgb")]
+            return self._encoder[self.cfg.obs](obs["state"], rgbs, hidden, sequential=sequential)
+
+        return self._encoder[self.cfg.obs](obs, hidden)
 
     def next(self, z, a, task):
         """

@@ -101,7 +101,7 @@ class Buffer:
         self._num_eps += self.cfg.num_envs
         return self._num_eps
 
-    def sample(self):
+    def sample(self, warmup_steps=0):
         """Sample a batch of subsequences from the buffer."""
-        td = self._buffer.sample().view(-1, self.cfg.horizon + 1).permute(1, 0)
+        td = self._buffer.sample().view(-1, warmup_steps + self.cfg.horizon + 1).permute(1, 0)
         return self._prepare_batch(td)

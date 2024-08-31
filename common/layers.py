@@ -43,7 +43,7 @@ class ShiftAug(nn.Module):
         c = x.size()[-3]
         h = x.size()[-2]
         w = x.size()[-1]
-        assert h == w
+        # assert h == w
         padding = tuple([self.pad] * 4)
         x = F.pad(x, padding, "replicate")
         eps = 1.0 / (h + 2 * self.pad)
@@ -149,15 +149,14 @@ def conv(in_shape, num_channels, act=None):
     Basic convolutional encoder for TD-MPC2 with raw image observations.
     4 layers of convolution with ReLU activations, followed by a linear layer.
     """
-    assert in_shape[-1] == 64  # assumes rgb observations to be 64x64
     layers = [
-        ShiftAug(),
+        # ShiftAug(),
         PixelPreprocess(),
         nn.Conv2d(in_shape[0] * 3, num_channels, 7, stride=2),
         nn.ReLU(inplace=True),
         nn.Conv2d(num_channels, num_channels, 5, stride=2),
         nn.ReLU(inplace=True),
-        nn.Conv2d(num_channels, num_channels, 3, stride=2),
+        nn.Conv2d(num_channels, num_channels, 3, stride=1),
         nn.ReLU(inplace=True),
         nn.Conv2d(num_channels, num_channels, 3, stride=1),
         nn.Flatten(),
@@ -169,31 +168,45 @@ def conv(in_shape, num_channels, act=None):
 
 class MultiModal(nn.Module):
     def __init__(
-        self, in_dim, mlp_dims, out_dim, in_shape, num_channels, act=None, dropout=0.0
+        self, in_dim, mlp_dims, out_dim, in_shapes, num_channels, num_layers = 2, act=None, dropout=0.0
     ):
         super().__init__()
         self.mlp = mlp(in_dim, mlp_dims, out_dim, None, dropout)
-        self.conv = conv(in_shape, num_channels, None)
-        conv_out_features = self.conv(torch.zeros(1, 8, 64, 64)).shape[-1]
-        self.adaptor = mlp(out_dim + conv_out_features, mlp_dims, out_dim, act, dropout)
-        self.mlp = mlp(in_dim, mlp_dims, out_dim, act, dropout)
+        self.convs = nn.ModuleList([conv(in_shape, num_channels, act) for in_shape in in_shapes])
+        self.num_layers = num_layers
+        conv_out_features = sum([self.convs[i](torch.zeros(1, *in_shapes[i])).shape[-1] for i in range(len(in_shapes))])
+        self.adaptor = nn.GRU(out_dim + conv_out_features, out_dim, num_layers=self.num_layers, dropout=dropout)
+        self.act = act
 
-    def forward(self, state, rgb):
-        state = self.mlp(state)
-        rgb = self.conv(rgb)
-        return self.adaptor(torch.cat([state, rgb], dim=-1))
+    def forward(self, state, rgbs, hidden, sequential=False):
+        batch_start_dim = 1 if sequential else 0
+        batch_size = state.shape[batch_start_dim:-1]
+        sequence_length = state.shape[0] if sequential else 1
+        state_latent = self.mlp(state).flatten(start_dim=0, end_dim=-2)
+        rgb_latent = torch.cat([self.convs[i](rgbs[i].flatten(start_dim=0, end_dim=-4)) for i in range(len(rgbs))], dim=-1)
+        if hidden is None:
+            hidden = torch.zeros((self.num_layers, *batch_size, self.adaptor.hidden_size), device=self.mlp[0].weight.device)
+        out = torch.cat([state_latent, rgb_latent], dim=-1)
+        hidden = hidden.flatten(start_dim=1, end_dim=-2)
+        output, hidden = self.adaptor(out.reshape(sequence_length, -1, out.shape[-1]), hidden)
+        if self.act:
+            output = self.act(output)
+        output = output.reshape(*state.shape[0:-1], -1)
+        hidden = hidden.view((self.num_layers, *batch_size, self.adaptor.hidden_size))
+        return output, hidden
 
 
 def enc(cfg, out={}):
     """
     Returns a dictionary of encoders for each observation in the dict.
     """
-    if "state" in cfg.obs_shape.keys() and "rgb" in cfg.obs_shape.keys():
+    if all([k == "state" or k.startswith("rgb") for k in cfg.obs_shape.keys()]) and cfg.obs == "multimodal":
+        rgb_shapes = [cfg.obs_shape[k] for k in cfg.obs_shape.keys() if k.startswith("rgb")]
         out["multimodal"] = MultiModal(
             cfg.obs_shape["state"][0] + cfg.task_dim,
             max(cfg.num_enc_layers - 1, 1) * [cfg.enc_dim],
             cfg.latent_dim,
-            cfg.obs_shape["rgb"],
+            rgb_shapes,
             cfg.num_channels,
             act=SimNorm(cfg),
         )
@@ -206,7 +219,7 @@ def enc(cfg, out={}):
                     cfg.latent_dim,
                     act=SimNorm(cfg),
                 )
-            elif k == "rgb":
+            elif k.startswith("rgb"):
                 out[k] = conv(cfg.obs_shape[k], cfg.num_channels, act=SimNorm(cfg))
             else:
                 raise NotImplementedError(
